@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VOID SUPPLY</title>
+<style>
+ :root {
+ --bg: #0a0a0a;
+ --card-bg: #141414;
+ --accent: #c8ff00;
+ --text: #f0f0f0;
+ --muted: #888;
+ --border: #222;
+ --radius: 12px;
+ --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+ }
+ * { box-sizing: border-box; margin: 0; padding: 0; }
+ body {
+ background: var(--bg);
+ color: var(--text);
+ font-family: var(--font);
+ line-height: 1.5;
+ min-height: 100vh;
+ }
+ header {
+ text-align: center;
+ padding: 2rem 1rem 1rem;
+ position: sticky;
+ top: 0;
+ z-index: 100;
+ background: linear-gradient(to bottom, var(--bg) 60%, transparent);
+ }
+ header h1 {
+ font-size: 2rem;
+ letter-spacing: 2px;
+ color: var(--accent);
+ text-transform: uppercase;
+ }
+ header p { color: var(--muted); font-size: 0.9rem; margin-top: 0.25rem; }
+ .cart-btn {
+ position: fixed;
+ bottom: 1.5rem;
+ right: 1.5rem;
+ z-index: 200;
+ background: var(--accent);
+ color: #000;
+ border: none;
+ border-radius: 50%;
+ width: 60px;
+ height: 60px;
+ font-size: 1.4rem;
+ cursor: pointer;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ box-shadow: 0 4px 20px rgba(200,255,0,0.3);
+ transition: transform 0.2s;
+ }
+ .cart-btn:hover { transform: scale(1.1); }
+ .cart-btn .badge {
+ position: absolute;
+ top: -4px;
+ right: -4px;
+ background: red;
+ color: white;
+ font-size: 0.7rem;
+ width: 22px;
+ height: 22px;
+ border-radius: 50%;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ font-weight: bold;
+ }
+ .grid {
+ display: grid;
+ grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+ gap: 1.25rem;
+ padding: 1rem;
+ max-width: 1200px;
+ margin: 0 auto;
+ }
+ .card {
+ background: var(--card-bg);
+ border: 1px solid var(--border);
+ border-radius: var(--radius);
+ overflow: hidden;
+ transition: border-color 0.2s, transform 0.2s;
+ }
+ .card:hover {
+ border-color: var(--accent);
+ transform: translateY(-4px);
+ }
+ /* Image Slot Styles */
+ .card-img-slot {
+ width: 100%;
+ aspect-ratio: 1/1;
+ background: #1a1a1a;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ overflow: hidden;
+ border-bottom: 1px solid var(--border);
+ }
+ .card-img-slot img {
+ width: 100%;
+ height: 100%;
+ object-fit: cover;
+ }
+ .card-body { padding: 1rem; }
+ .card-title {
+ font-size: 1rem;
+ font-weight: 600;
+ margin-bottom: 0.25rem;
+ }
+ .card-desc {
+ font-size: 0.8rem;
+ color: var(--muted);
+ margin-bottom: 0.75rem;
+ }
+ .card-price {
+ font-size: 1.1rem;
+ color: var(--accent);
+ font-weight: 700;
+ }
+ .card-actions {
+ display: flex;
+ gap: 0.5rem;
+ margin-top: 0.75rem;
+ }
+ .btn {
+ flex: 1;
+ padding: 0.6rem 0.75rem;
+ border: none;
+ border-radius: 8px;
+ font-size: 0.85rem;
+ font-weight: 600;
+ cursor: pointer;
+ transition: opacity 0.2s;
+ }
+ .btn:hover { opacity: 0.85; }
+ .btn-primary {
+ background: var(--accent);
+ color: #000;
+ }
+ .btn-outline {
+ background: transparent;
+ color: var(--accent);
+ border: 1px solid var(--accent);
+ }
+ .btn-small {
+ padding: 0.3rem 0.5rem;
+ font-size: 0.75rem;
+ }
+
+ /* Modal */
+ .modal-overlay {
+ display: none;
+ position: fixed;
+ inset: 0;
+ background: rgba(0,0,0,0.85);
+ z-index: 500;
+ align-items: center;
+ justify-content: center;
+ padding: 1rem;
+ }
+ .modal-overlay.active { display: flex; }
+ .modal {
+ background: var(--card-bg);
+ border: 1px solid var(--border);
+ border-radius: var(--radius);
+ width: 100%;
+ max-width: 520px;
+ max-height: 90vh;
+ overflow-y: auto;
+ padding: 1.5rem;
+ position: relative;
+ }
+ .modal-close {
+ position: absolute;
+ top: 1rem;
+ right: 1rem;
+ background: none;
+ border: none;
+ color: var(--muted);
+ font-size: 1.5rem;
+ cursor: pointer;
+ }
+ .modal h2 { margin-bottom: 1rem; font-size: 1.3rem; }
+ .cart-item {
+ display: flex;
+ justify-content: space-between;
+ align-items: center;
+ padding: 0.75rem 0;
+ border-bottom: 1px solid var(--border);
+ }
+ .cart-item:last-child { border-bottom: none; }
+ .cart-item-info { flex: 1; }
+ .cart-item-name { font-size: 0.9rem; font-weight: 600; }
+ .cart-item-detail { font-size: 0.75rem; color: var(--muted); }
+ .cart-item-price { color: var(--accent); font-weight: 600; font-size: 0.9rem; min-width: 70px; text-align: right; }
+ .qty-controls {
+ display: flex;
+ align-items: center;
+ gap: 0.5rem;
+ margin-left: 0.75rem;
+ }
+ .qty-btn {
+ width: 28px;
+ height: 28px;
+ border-radius: 6px;
+ border: 1px solid var(--border);
+ background: transparent;
+ color: var(--text);
+ cursor: pointer;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ font-size: 0.9rem;
+ }
+ .qty-btn:hover { border-color: var(--accent); color: var(--accent); }
+ .qty-val { font-size: 0.85rem; min-width: 20px; text-align: center; }
+ .cart-total {
+ display: flex;
+ justify-content: space-between;
+ padding: 1rem 0;
+ font-size: 1.1rem;
+ font-weight: 700;
+ border-top: 2px solid var(--accent);
+ margin-top: 0.5rem;
+ }
+ .cart-total span:last-child { color: var(--accent); }
+ .empty-cart {
+ text-align: center;
+ padding: 2rem 0;
+ color: var(--muted);
+ font-size: 0.9rem;
+ }
+ .variant-selectors {
+ display: flex;
+ flex-wrap: wrap;
+ gap: 0.4rem;
+ margin-top: 0.5rem;
+ }
+ .variant-btn {
+ padding: 0.3rem 0.6rem;
+ border: 1px solid var(--border);
+ border-radius: 6px;
+ background: transparent;
+ color: var(--muted);
+ font-size: 0.75rem;
+ cursor: pointer;
+ transition: all 0.15s;
+ }
+ .variant-btn:hover { border-color: var(--accent); color: var(--text); }
+ .variant-btn.selected {
+ border-color: var(--accent);
+ background: rgba(200,255,0,0.1);
+ color: var(--accent);
+ }
+ footer {
+ text-align: center;
+ padding: 2rem 1rem;
+ color: var(--muted);
+ font-size: 0.8rem;
+ }
+ @media (max-width: 480px) {
+ header h1 { font-size: 1.5rem; }
+ .grid { grid-template-columns: 1fr; padding: 0.75rem; }
+ .modal { padding: 1rem; }
+ }
+</style>
+</head>
+<body>
+
+<header>
+ <h1>🌿 VOID SUPPLY</h1>
+ <p>USA Drop &bull; Fast Delivery &bull; All In Stock</p>
+</header>
+
+<button class="cart-btn" onclick="openCart()" aria-label="Open cart">
+ 🛒
+ <span class="badge" id="cartBadge">0</span>
+</button>
+
+<div class="grid" id="productGrid"></div>
+
+<!-- Cart Modal -->
+<div class="modal-overlay" id="cartModal">
+ <div class="modal">
+ <button class="modal-close" onclick="closeCart()">&times;</button>
+ <h2>Your Cart</h2>
+ <div id="cartItems"></div>
+ <div id="cartFooter"></div>
+ <button class="btn btn-primary" style="width:100%;margin-top:1rem;" onclick="checkoutWhatsApp()">Checkout on WhatsApp</button>
+ </div>
+</div>
+
+<footer>
+ &copy; 2026 VOID SUPPLY &bull; USA Drop &bull; All rights reserved
+</footer>
+
+<script>
+const PRODUCTS = [
+ // === WEAPONS ===
+ {
+ id: 'glock-g45',
+ name: 'Glock G45',
+ desc: 'Comes with 2 mags and a box. Still new.',
+ basePrice: 400,
+ image: 'GlockG45.jpeg', 
+ emoji: '🔫',
+ category: 'weapons'
+ },
+ {
+ id: 'glock-17',
+ name: 'Glock 17',
+ desc: 'Fast deal. Still new, comes with 2 mags.',
+ basePrice: 400,
+ image: 'Glock17.jpeg',
+ emoji: '🔫',
+ category: 'weapons'
+ },
+ {
+ id: 'taurus-g3c',
+ name: 'Taurus G3C',
+ desc: 'Caliber: 9mm. Only 3 available.',
+ basePrice: 200,
+ image: 'TaurusG3C.jpeg',
+ emoji: '🔫',
+ category: 'weapons'
+ },
+ {
+ id: 'glock-standard',
+ name: 'Standard Glock',
+ desc: 'Offers continue to sell out, including accessories.',
+ basePrice: 350,
+ image: 'Standard Glock.jpeg',
+ emoji: '🔫',
+ category: 'weapons'
+ },
+ {
+ id: 'mp-shield',
+ name: 'M&P 9 Shield',
+ desc: 'Compact and reliable. Choose your color.',
+ basePrice: 200,
+ variants: [
+ { label: 'Black', priceMod: 0 },
+ { label: 'Gray', priceMod: 0 },
+ { label: 'Brown', priceMod: 0 }
+ ],
+ image: 'M&P 9 Shield.jpeg',
+ emoji: '🔫',
+ category: 'weapons'
+ },
+ {
+ id: 'ar-9-build',
+ name: 'Custom AR-9 / 9mm PCC Build',
+ desc: 'High-quality custom pistol build.',
+ basePrice: 900,
+ image: 'Custom AR-9 9mm PCC Build.jpeg',
+ emoji: '🎯',
+ category: 'weapons'
+ },
+
+ // === VAPE / CARTRIDGES ===
+ {
+ id: 'muha-summer',
+ name: 'Muha Meds Summer Edition',
+ desc: 'Watermelon flavor. Limited stock.',
+ basePrice: 50,
+ variants: [
+ { label: '1g', priceMod: 0 },
+ { label: '2g', priceMod: 50 },
+ { label: '3g', priceMod: 25 },
+ { label: '5g', priceMod: 70 },
+ { label: '10g', priceMod: 120 }
+ ],
+ image: 'Muha Meds Summer Edition.jpeg',
+ emoji: '🍉',
+ category: 'vapes'
+ },
+ {
+ id: 'wholemelts-3gs',
+ name: 'WholeMelts 3GS Liquid Diamond',
+ desc: 'Premium liquid diamond cartridges.',
+ basePrice: 150,
+ variants: [
+ { label: '10pc', priceMod: 0 },
+ { label: '20pc', priceMod: 130 },
+ { label: '25pc', priceMod: 190 },
+ { label: '50pc', priceMod: 490 }
+ ],
+ image: 'WholeMelts 3GS Liquid Diamond.jpeg',
+ emoji: '💎',
+ category: 'vapes'
+ },
+ {
+ id: 'plumes',
+ name: 'Plumes ',
+ desc: 'Bulk pack available.',
+ basePrice: 120,
+ variants: [
+ { label: '10pc', priceMod: 0 },
+ { label: '25pc', priceMod: 130 }
+ ],
+ image: 'Plumes.jpeg',
+ emoji: '💨',
+ category: 'vapes'
+ },
+ {
+ id: 'stoner-sticks',
+ name: 'Stoner Sticks World Tour Edition',
+ desc: '20K on hand. Limited edition.',
+ basePrice: 200,
+ image: 'Stoner Sticks World Tour Edition.jpeg',
+ emoji: '🌍',
+ category: 'vapes'
+ },
+ {
+ id: 'cheetah-piss',
+ name: 'Cheetah Piss',
+ desc: 'Premium cartridge. Free shipping on bulk.',
+ basePrice: 400,
+ image: 'Cheetah Piss.jpeg',
+ emoji: '🐆',
+ category: 'vapes'
+ },
+ {
+ id: 'gg-cartridge',
+ name: 'G&G Cartridge',
+ desc: 'High quality concentrate.',
+ basePrice: 400,
+ image: 'G&G Cartridge.jpeg',
+ emoji: '🔥',
+ category: 'vapes'
+ },
+ {
+ id: 'tcg-cartridge',
+ name: 'TCG Cartridge',
+ desc: 'Top shelf concentrate.',
+ basePrice: 400,
+ image: 'TCG Cartridge.jpeg',
+ emoji: '🏆',
+ category: 'vapes'
+ },
+ {
+ id: 'gelato',
+ name: 'Gelato',
+ desc: 'Premium gelato strain cartridge.',
+ basePrice: 700,
+ image: 'Gelato.jpeg',
+ emoji: '🍨',
+ category: 'vapes'
+ },
+ {
+ id: 'muha-gen3',
+ name: 'Muha Gen 3',
+ desc: 'Friday deal. Premium gen 3 cartridges.',
+ basePrice: 150,
+ variants: [
+ { label: '5pc', priceMod: 0 },
+ { label: '10pc', priceMod: 0 }
+ ],
+ image: 'Muha Gen 3.jpeg',
+ emoji: '🌿',
+ category: 'vapes'
+ },
+
+ // === DRUGS / CHEMICALS ===
+ {
+ id: 'coke',
+ name: 'Cocaine',
+ desc: 'High purity. Sealed packs.',
+ basePrice: 240,
+ variants: [
+ { label: '5g', priceMod: 0 },
+ { label: '10g', priceMod: 210 },
+ { label: '50g', priceMod: 1760 },
+ { label: '100g', priceMod: 3460 }
+ ],
+ image: 'Cocaine.jpeg',
+ emoji: '❄️',
+ category: 'drugs'
+ },
+ {
+ id: 'oxycodone',
+ name: 'Oxycodone 10mg Pink',
+ desc: 'Sealed bottles of 100 tablets.',
+ basePrice: 400,
+ image: 'Oxycodone 10mg Pink.jpeg',
+ emoji: '💖',
+ category: 'drugs'
+ },
+ {
+ id: 'besos',
+ name: 'Besos Authentic',
+ desc: 'THC gummies / edibles.',
+ basePrice: 12,
+ variants: [
+ { label: '25+', priceMod: 2 },
+ { label: '50/100+', priceMod: 1.5 },
+ { label: 'Bulk', priceMod: 0 }
+ ],
+ image: 'Besos Authentic.jpeg',
+ emoji: '😘',
+ category: 'drugs'
+ },
+
+ // === CLONED CARDS ===
+ {
+ id: 'cloned-card-low',
+ name: 'Low Balance Cloned Card',
+ desc: 'Cloned debit/credit cards with BTC balance.',
+ basePrice: 6000,
+ variants: [
+ { label: '450 BTC', priceMod: 0 },
+ { label: '550 BTC', priceMod: 3000 },
+ { label: '650 BTC', priceMod: 5000 }
+ ],
+ image: 'Low Balance Cloned Card.jpeg',
+ emoji: '💳',
+ category: 'cards'
+ },
+ {
+ id: 'cloned-card-high',
+ name: 'High Balance Cloned Card',
+ desc: 'Premium cloned cards with high BTC balance.',
+ basePrice: 13000,
+ variants: [
+ { label: '750 BTC', priceMod: 0 },
+ { label: '1500 BTC', priceMod: 2000 },
+ { label: '2000 BTC', priceMod: 4000 },
+ { label: '3000 BTC', priceMod: 6000 },
+ { label: '4000 BTC', priceMod: 8000 },
+ { label: '5000 BTC', priceMod: 12000 },
+ { label: '8000 BTC', priceMod: 17000 },
+ { label: '10000 BTC', priceMod: 27000 }
+ ],
+ image: 'High Balance Cloned Card.jpeg',
+ emoji: '💎',
+ category: 'cards'
+ },
+
+ // === CANNABIS STRAINS ===
+ {
+ id: 'oz',
+ name: 'OG Kush',
+ desc: 'Premium flower. By the ounce.',
+ basePrice: 200,
+ variants: [
+ { label: '1 Oz', priceMod: 0 },
+ { label: '1/4 lb (Qp)', priceMod: 200 },
+ { label: '1/2 lb (Hp)', priceMod: 400 },
+ { label: '1 lb (P)', priceMod: 650 }
+ ],
+ image: 'OG Kush.jpeg',
+ emoji: '💧',
+ category: 'cannabis'
+ }
+];
+
+let cart = JSON.parse(localStorage.getItem('zaza_cart') || '{}');
+
+function saveCart() {
+ localStorage.setItem('zaza_cart', JSON.stringify(cart));
+ updateBadge();
+}
+
+function updateBadge() {
+ const total = Object.values(cart).reduce((sum, item) => sum + item.qty, 0);
+ document.getElementById('cartBadge').textContent = total;
+}
+
+function getVariantPrice(product, variantIndex) {
+ if (!product.variants) return product.basePrice;
+ if (variantIndex === undefined || variantIndex === null) variantIndex = 0;
+ return product.basePrice + (product.variants[variantIndex]?.priceMod ?? 0);
+}
+
+function renderProducts(filter = 'all') {
+ const grid = document.getElementById('productGrid');
+ const filtered = filter === 'all' ? PRODUCTS : PRODUCTS.filter(p => p.category === filter);
+
+ grid.innerHTML = filtered.map(p => `
+ <div class="card" data-id="${p.id}">
+ <div class="card-img-slot">
+ <img src="${p.image}" alt="${p.name}" onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=&quot;color:#888;font-size:1.2rem;text-align:center;padding:1rem;&quot;>${p.name}</div>';">
+ </div>
+ <div class="card-body">
+ <div class="card-title">${p.name}</div>
+ <div class="card-desc">${p.desc}</div>
+ <div class="card-price">$${getVariantPrice(p)}${p.variants ? '+' : ''}</div>
+ ${p.variants ? `
+ <div class="variant-selectors" id="variants-${p.id}">
+ ${p.variants.map((v, i) => `
+ <button class="variant-btn ${i === 0 ? 'selected' : ''}"
+ onclick="selectVariant('${p.id}', ${i}, this)">
+ ${v.label}
+ </button>
+ `).join('')}
+ </div>
+ ` : ''}
+ <div class="card-actions">
+ <button class="btn btn-primary" onclick="addToCart('${p.id}')">Add to Cart</button>
+ </div>
+ </div>
+ </div>
+ `).join('');
+}
+
+let selectedVariants = {};
+
+function selectVariant(productId, index, el) {
+ selectedVariants[productId] = index;
+ const container = document.getElementById(`variants-${productId}`);
+ container.querySelectorAll('.variant-btn').forEach(b => b.classList.remove('selected'));
+ el.classList.add('selected');
+ const product = PRODUCTS.find(p => p.id === productId);
+ const priceEl = el.closest('.card-body').querySelector('.card-price');
+ priceEl.textContent = `$${getVariantPrice(product, index)}`;
+}
+
+function getCurrentVariant(productId) {
+ const product = PRODUCTS.find(p => p.id === productId);
+ if (!product?.variants) return 0;
+ return selectedVariants[productId] ?? 0;
+}
+
+function addToCart(productId) {
+ const product = PRODUCTS.find(p => p.id === productId);
+ const variantIdx = getCurrentVariant(productId);
+ const key = `${productId}-${variantIdx}`;
+ const price = getVariantPrice(product, variantIdx);
+ const variantLabel = product.variants ? product.variants[variantIdx].label : '';
+
+ if (cart[key]) {
+ cart[key].qty += 1;
+ } else {
+ cart[key] = {
+ productId,
+ name: product.name,
+ variant: variantLabel,
+ price,
+ qty: 1,
+ emoji: product.emoji
+ };
+ }
+
+ saveCart();
+ showToast(`${product.name} added to cart!`);
+}
+
+function removeFromCart(key) {
+ delete cart[key];
+ saveCart();
+ renderCart();
+}
+
+function changeQty(key, delta) {
+ if (cart[key]) {
+ cart[key].qty = Math.max(1, cart[key].qty + delta);
+ saveCart();
+ renderCart();
+ }
+}
+
+function renderCart() {
+ const itemsDiv = document.getElementById('cartItems');
+ const footerDiv = document.getElementById('cartFooter');
+ const entries = Object.entries(cart);
+
+ if (entries.length === 0) {
+ itemsDiv.innerHTML = '<div class="empty-cart">Your cart is empty.<br>Add some smoke! 🔥</div>';
+ footerDiv.innerHTML = '';
+ document.querySelector('#cartModal .btn-primary').style.display = 'none';
+ return;
+ }
+
+ document.querySelector('#cartModal .btn-primary').style.display = 'block';
+
+ itemsDiv.innerHTML = entries.map(([key, item]) => `
+ <div class="cart-item">
+ <div class="cart-item-info">
+ <div class="cart-item-name">${item.emoji} ${item.name}</div>
+ ${item.variant ? `<div class="cart-item-detail">${item.variant}</div>` : ''}
+ </div>
+ <div class="cart-item-price">$${item.price * item.qty}</div>
+ <div class="qty-controls">
+ <button class="qty-btn" onclick="changeQty('${key}', -1)">−</button>
+ <span class="qty-val">${item.qty}</span>
+ <button class="qty-btn" onclick="changeQty('${key}', 1)">+</button>
+ </div>
+ <button class="btn btn-outline btn-small" style="flex:none;margin-left:0.5rem;" onclick="removeFromCart('${key}')">✕</button>
+ </div>
+ `).join('');
+
+ const total = entries.reduce((sum, [, item]) => sum + item.price * item.qty, 0);
+ footerDiv.innerHTML = `
+ <div class="cart-total">
+ <span>Total</span>
+ <span>$${total.toLocaleString()}</span>
+ </div>
+ `;
+}
+
+function openCart() {
+ renderCart();
+ document.getElementById('cartModal').classList.add('active');
+}
+
+function closeCart() {
+ document.getElementById('cartModal').classList.remove('active');
+}
+
+// WhatsApp Checkout Logic
+function checkoutWhatsApp() {
+ const entries = Object.entries(cart);
+ if (entries.length === 0) return;
+
+ let message = "Hello VOID SUPPLY, I'd like to place an order:\n\n";
+ let total = 0;
+
+ entries.forEach(([, item]) => {
+ const itemTotal = item.price * item.qty;
+ total += itemTotal;
+ message += `• ${item.name} (${item.variant}) x${item.qty} — $${itemTotal}\n`;
+ });
+
+ message += `\n*TOTAL: $${total.toLocaleString()}*`;
+
+ const phoneNumber = "19862127465";
+ const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+ window.open(url, '_blank');
+}
+
+function showToast(message) {
+ const existing = document.querySelector('.toast');
+ if (existing) existing.remove();
+
+ const toast = document.createElement('div');
+ toast.className = 'toast';
+ toast.textContent = message;
+ Object.assign(toast.style, {
+ position: 'fixed',
+ bottom: '5rem',
+ left: '50%',
+ transform: 'translateX(-50%)',
+ background: '#141414',
+ color: '#c8ff00',
+ padding: '0.75rem 1.5rem',
+ borderRadius: '8px',
+ fontSize: '0.85rem',
+ zIndex: '9999',
+ border: '1px solid #c8ff00',
+ boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+ animation: 'fadeInOut 2.5s forwards'
+ });
+ document.body.appendChild(toast);
+ setTimeout(() => toast.remove(), 2500);
+}
+
+// Category tabs
+function renderCategories() {
+ const nav = document.createElement('div');
+ nav.style.cssText = 'display:flex;gap:0.5rem;overflow-x:auto;padding:0.5rem 1rem;max-width:1200px;margin:0 auto;-webkit-overflow-scrolling:touch;';
+ const categories = [
+ { id: 'all', label: 'All Products' },
+ { id: 'weapons', label: '🔫 Weapons' },
+ { id: 'vapes', label: '💨 Vapes & Cartridges' },
+ { id: 'drugs', label: '💊 Drugs & Edibles' },
+ { id: 'cards', label: '💳 Cloned Cards' },
+ { id: 'cannabis', label: '🌿 Cannabis' }
+ ];
+ 
+ nav.innerHTML = categories.map(cat => `
+ <button class="cat-btn" data-cat="${cat.id}"
+ style="padding:0.5rem 1rem;border:1px solid var(--border);border-radius:20px;background:transparent;color:var(--muted);font-size:0.8rem;cursor:pointer;white-space:nowrap;transition:all 0.15s;"
+ onclick="filterCategory('${cat.id}', this)">
+ ${cat.label}
+ </button>
+ `).join('');
+ document.querySelector('header').after(nav);
+}
+
+function filterCategory(catId, el) {
+ document.querySelectorAll('.cat-btn').forEach(b => {
+ b.style.borderColor = 'var(--border)';
+ b.style.color = 'var(--muted)';
+ b.style.background = 'transparent';
+ });
+ el.style.borderColor = 'var(--accent)';
+ el.style.color = 'var(--accent)';
+ el.style.background = 'rgba(200,255,0,0.1)';
+ renderProducts(catId);
+}
+
+// Init
+renderProducts();
+updateBadge();
+renderCategories();
+
+// Inject toast animation
+const style = document.createElement('style');
+style.textContent = `@keyframes fadeInOut{0%{opacity:0;transform:translateX(-50%) translateY(10px)}10%{opacity:1;transform:translateX(-50%) translateY(0)}80%{opacity:1}100%{opacity:0}}`;
+document.head.appendChild(style);
+</script>
+
+</body>
+</html>
